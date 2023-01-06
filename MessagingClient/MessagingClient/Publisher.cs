@@ -38,7 +38,10 @@ namespace MessagingClient {
                 VPNName = VpnName,
                 UserName = UserName,
                 Password = Password,
-                ReconnectRetries = DefaultReconnectRetries
+                ReconnectRetries = DefaultReconnectRetries,
+                // TODO: Validate SSL Certificate
+                // https://solace.community/discussion/512/c-net-integration-getting-error-failed-to-create-session
+                SSLValidateCertificate = false
             };
 
             // Connect to the Solace messaging router
@@ -102,14 +105,15 @@ namespace MessagingClient {
                     Publisher topicPublisher = new Publisher()
                     {
                         // TODO: Simplified for POC
-                        VpnName = "default",
-                        UserName = "admin",
-                        Password = "admin"
+                        VpnName = "solace-poc",
+                        UserName = "solace-cloud-client",
+                        // TODO: Replace with env variable
+                        Password = ""
                     };
 
                     // Run the application within the context and against the host
                     // TODO: Simplified for POC
-                    topicPublisher.Run(context, "http://localhost:8008", topic, message);
+                    topicPublisher.Run(context, "tcps://mr-connection-x7dzv7fkvnf.messaging.solace.cloud:55443", topic, message);
                     
                 }
             }
