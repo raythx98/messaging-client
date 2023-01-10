@@ -84,7 +84,7 @@ namespace MessagingClient {
                 message.DMQEligible = true;
 
                 // Publish the message to the topic on the Solace messaging router
-                Console.Write("Wrapper Logs: Publishing message... {0}...", Encoding.ASCII.GetString(message.BinaryAttachment));
+                Console.WriteLine("Wrapper Logs: Publishing message... {0}...", Encoding.ASCII.GetString(message.BinaryAttachment));
                 if (session == null)
                 {
                     throw new ArgumentException("Solace Systems API session must be not null.", "session");
@@ -93,10 +93,10 @@ namespace MessagingClient {
                 
                 if (returnCode != ReturnCode.SOLCLIENT_OK)
                 {
-                    Console.WriteLine("Wrapper Publishing failed, return code: {0}", returnCode);
+                    Console.WriteLine("Wrapper Logs: Publishing failed, return code: {0}", returnCode);
                 }
                 
-                Console.WriteLine("Wrapper Published!");
+                Console.WriteLine("Wrapper Logs: Published!");
             }
         }
         

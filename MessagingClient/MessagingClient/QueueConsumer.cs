@@ -95,7 +95,7 @@ namespace MessagingClient
             // Create and start flow to the provisioned queue
             // NOTICE HandleMessageEvent as the message event handler 
             // and HandleFlowEvent as the flow event handler
-            Console.WriteLine("Waiting for a message in the queue '{0}'...", queueName);
+            Console.WriteLine("Wrapper Logs: Waiting for a message in the queue '{0}'...", queueName);
             flow = session.CreateFlow(new FlowProperties()
                 {
                     AckMode = MessageAckMode.ClientAck
@@ -135,7 +135,7 @@ namespace MessagingClient
                     BinaryMessages.Add(message.BinaryAttachment);
                 }
                 
-                Console.WriteLine("Wrapper Consumed! {0}", Encoding.ASCII.GetString(message.BinaryAttachment));
+                Console.WriteLine("Wrapper Logs: Wrapper Consumed! {0}", Encoding.ASCII.GetString(message.BinaryAttachment));
                 // ACK the message
                 if (flow == null)
                 {
@@ -150,7 +150,7 @@ namespace MessagingClient
         public void HandleFlowEvent(object sender, FlowEventArgs args)
         {
             // Received a flow event
-            Console.WriteLine("Received Flow Event '{0}' Type: '{1}' Text: '{2}'",
+            Console.WriteLine("Wrapper Logs: Received Flow Event '{0}' Type: '{1}' Text: '{2}'",
                 args.Event,
                 args.ResponseCode.ToString(),
                 args.Info);
@@ -194,7 +194,7 @@ namespace MessagingClient
         #region Main
         private void consumeMessage()
         {
-            Console.Write("Wrapper Logs: Waiting...");
+            Console.WriteLine("Wrapper Logs: Waiting...");
             WaitEventWaitHandle.WaitOne();
         }
         
@@ -206,7 +206,7 @@ namespace MessagingClient
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Exception thrown: {0}", ex.Message);
+                Console.WriteLine("Wrapper Logs: Exception thrown: {0}", ex.Message);
             }
 
             byte[][] messageArray;

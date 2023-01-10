@@ -110,7 +110,7 @@ namespace MessagingClient {
                     BinaryMessages.Add(message.BinaryAttachment);
                 }
                 
-                Console.WriteLine("Wrapper Consumed! {0}", Encoding.ASCII.GetString(message.BinaryAttachment));
+                Console.WriteLine("Wrapper Logs: Wrapper Consumed! {0}", Encoding.ASCII.GetString(message.BinaryAttachment));
                 // finish the program
                 WaitEventWaitHandle.Set();
             }
@@ -145,7 +145,7 @@ namespace MessagingClient {
         #region Consume
         private void consumeMessage()
         {
-            Console.Write("Wrapper Logs: Waiting...");
+            Console.WriteLine("Wrapper Logs: Waiting...");
             WaitEventWaitHandle.WaitOne();
         }
         
