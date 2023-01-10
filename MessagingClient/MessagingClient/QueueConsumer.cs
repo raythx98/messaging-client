@@ -1,20 +1,27 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using SolaceSystems.Solclient.Messaging;
 using System.Threading;
 
-namespace MessagingClient {
-    public class Consumer : IDisposable
+namespace MessagingClient
+{
+    /// <summary>
+    /// Demonstrates how to use Solace Systems Messaging API for sending and receiving a guaranteed delivery message
+    /// </summary>
+    public class QueueConsumer : IDisposable
     {
         private IContext? context;
         private ISession? session;
+        private IQueue? queue;
+        private IFlow? flow;
         private EventWaitHandle WaitEventWaitHandle = new AutoResetEvent(false);
         
         private readonly object messagesLock = new object(); 
         private List<byte[]> BinaryMessages = new List<byte[]>();
         
         private const int DefaultReconnectRetries = 3;
+        
         public void createConnection(string host, string vpnName, string userName, string passWord)
         {
             // Initialize Solace Systems Messaging API with logging to console at Warning level
@@ -56,7 +63,7 @@ namespace MessagingClient {
                 throw new ArgumentException("Solace Systems API context Router must be not null.", "context");
             }
 
-            session = context.CreateSession(sessionProps, HandleMessage, null);
+            session = context.CreateSession(sessionProps, null, null);
             if (session == null)
             {
                 throw new ArgumentException("Solace Systems API session must be not null.", "session");
@@ -75,17 +82,34 @@ namespace MessagingClient {
             Console.WriteLine("Wrapper Logs: Session successfully connected.");
         }
 
-        public void subscribe(string topic)
+        public void subscribe(string queueName)
         {
-            // This is the topic on Solace messaging router where a message is published
-            // Must subscribe to it to receive messages
-            // TODO: check what if topic does not exist
             if (session == null)
             {
-                throw new ArgumentException("Solace Systems API session must be not null.", "session");
-            } 
-            session.Subscribe(ContextFactory.Instance.CreateTopic(topic), true);
-            Console.WriteLine("Wrapper Logs: Topic successfully subscribed... {0}", topic);
+                throw new InvalidOperationException("Session not yet created, use createConnection(...)");
+            }
+
+            // Create the queue
+            queue = ContextFactory.Instance.CreateQueue(queueName);
+
+            // Create and start flow to the provisioned queue
+            // NOTICE HandleMessageEvent as the message event handler 
+            // and HandleFlowEvent as the flow event handler
+            Console.WriteLine("Waiting for a message in the queue '{0}'...", queueName);
+            flow = session.CreateFlow(new FlowProperties()
+                {
+                    AckMode = MessageAckMode.ClientAck
+                },
+                queue, null, HandleMessageEvent, HandleFlowEvent);
+        }
+
+        public void startListening()
+        {
+            if (flow == null)
+            {
+                throw new InvalidOperationException("Flow not yet created, use subscribe(queueName)");
+            }
+            flow.Start();
         }
 
         public void closeConnection()
@@ -93,15 +117,16 @@ namespace MessagingClient {
             ContextFactory.Instance.Cleanup();
         }
 
+
         /// <summary>
         /// This event handler is invoked by Solace Systems Messaging API when a message arrives
         /// </summary>
         /// <param name="source"></param>
         /// <param name="args"></param>
-        private void HandleMessage(object source, MessageEventArgs args)
+        private void HandleMessageEvent(object source, MessageEventArgs args)
         {
-            // Console.WriteLine("Wrapper Logs: Received published message.");
             // Received a message
+            // Console.WriteLine("Wrapper Logs: Received message.");
             using (IMessage message = args.Message)
             {
                 // Expecting the message content as a binary attachment
@@ -111,9 +136,24 @@ namespace MessagingClient {
                 }
                 
                 Console.WriteLine("Wrapper Consumed! {0}", Encoding.ASCII.GetString(message.BinaryAttachment));
+                // ACK the message
+                if (flow == null)
+                {
+                    throw new InvalidOperationException("Flow not yet created, use subscribe(queueName), then start using startListening()");
+                }
+                flow.Ack(message.ADMessageId);
                 // finish the program
                 WaitEventWaitHandle.Set();
             }
+        }
+
+        public void HandleFlowEvent(object sender, FlowEventArgs args)
+        {
+            // Received a flow event
+            Console.WriteLine("Received Flow Event '{0}' Type: '{1}' Text: '{2}'",
+                args.Event,
+                args.ResponseCode.ToString(),
+                args.Info);
         }
 
         #region IDisposable Support
@@ -128,6 +168,17 @@ namespace MessagingClient {
                     if (session != null)
                     {
                         session.Dispose();
+                        session = null;
+                    }
+                    if (queue != null)
+                    {
+                        queue.Dispose();
+                        queue = null;
+                    }
+                    if (flow != null)
+                    {
+                        flow.Dispose();
+                        flow = null;
                     }
                 }
                 disposedValue = true;
@@ -140,9 +191,7 @@ namespace MessagingClient {
         }
         #endregion
 
-        
-
-        #region Consume
+        #region Main
         private void consumeMessage()
         {
             Console.Write("Wrapper Logs: Waiting...");
@@ -157,7 +206,7 @@ namespace MessagingClient {
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Wrapper Logs: Exception thrown: {0}", ex.Message);
+                Console.WriteLine("Exception thrown: {0}", ex.Message);
             }
 
             byte[][] messageArray;
@@ -171,4 +220,3 @@ namespace MessagingClient {
         #endregion
     }
 }
-
