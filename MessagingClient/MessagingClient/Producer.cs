@@ -6,9 +6,12 @@ namespace MessagingClient {
     
     public class Producer
     {
+        #region Class Variables
         private IContext? context;
         private ISession? session;
         private const int DefaultReconnectRetries = 3;
+        #endregion
+        
         public void createConnection(string host, string vpnName, string userName, string passWord)
         {
             // Initialize Solace Systems Messaging API with logging to console at Warning level
@@ -72,7 +75,20 @@ namespace MessagingClient {
         {
             ContextFactory.Instance.Cleanup();
         }
+        
+        public void Produce(string topic, string message)
+        {
+            try
+            {
+                PublishMessage(topic, message);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Wrapper Logs: Exception thrown: {0}", ex.Message);
+            }
+        }
 
+        #region Publish Message
         private void PublishMessage(string topic, string messageContent)
         {
             // Create the message
@@ -97,19 +113,6 @@ namespace MessagingClient {
                 }
                 
                 Console.WriteLine("Wrapper Logs: Published!");
-            }
-        }
-        
-        #region Producer
-        public void Produce(string topic, string message)
-        {
-            try
-            {
-                PublishMessage(topic, message);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Wrapper Logs: Exception thrown: {0}", ex.Message);
             }
         }
         #endregion

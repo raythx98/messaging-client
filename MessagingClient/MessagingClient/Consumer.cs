@@ -7,6 +7,7 @@ using System.Threading;
 namespace MessagingClient {
     public class Consumer : IDisposable
     {
+        #region Class Variables
         private IContext? context;
         private ISession? session;
         private EventWaitHandle WaitEventWaitHandle = new AutoResetEvent(false);
@@ -15,6 +16,8 @@ namespace MessagingClient {
         private List<byte[]> BinaryMessages = new List<byte[]>();
         
         private const int DefaultReconnectRetries = 3;
+        #endregion
+        
         public void createConnection(string host, string vpnName, string userName, string passWord)
         {
             // Initialize Solace Systems Messaging API with logging to console at Warning level
@@ -92,7 +95,28 @@ namespace MessagingClient {
         {
             ContextFactory.Instance.Cleanup();
         }
+        
+        public byte[][] Consume()
+        {
+            try
+            {
+                consumeMessage();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Wrapper Logs: Exception thrown: {0}", ex.Message);
+            }
 
+            byte[][] messageArray;
+            lock (messagesLock)  
+            {  
+                messageArray = BinaryMessages.ToArray();
+                BinaryMessages.Clear();
+            }  
+            return messageArray;
+        }
+
+        #region Handle Message
         /// <summary>
         /// This event handler is invoked by Solace Systems Messaging API when a message arrives
         /// </summary>
@@ -115,6 +139,7 @@ namespace MessagingClient {
                 WaitEventWaitHandle.Set();
             }
         }
+        #endregion
 
         #region IDisposable Support
         private bool disposedValue = false;
@@ -139,34 +164,12 @@ namespace MessagingClient {
             Dispose(true);
         }
         #endregion
-
         
-
-        #region Consume
+        #region Consume Message
         private void consumeMessage()
         {
             Console.WriteLine("Wrapper Logs: Waiting...");
             WaitEventWaitHandle.WaitOne();
-        }
-        
-        public byte[][] Consume()
-        {
-            try
-            {
-                consumeMessage();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Wrapper Logs: Exception thrown: {0}", ex.Message);
-            }
-
-            byte[][] messageArray;
-            lock (messagesLock)  
-            {  
-                messageArray = BinaryMessages.ToArray();
-                BinaryMessages.Clear();
-            }  
-            return messageArray;
         }
         #endregion
     }

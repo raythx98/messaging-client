@@ -11,6 +11,7 @@ namespace MessagingClient
     /// </summary>
     public class QueueConsumer : IDisposable
     {
+        #region Class Variables
         private IContext? context;
         private ISession? session;
         private IQueue? queue;
@@ -21,6 +22,7 @@ namespace MessagingClient
         private List<byte[]> BinaryMessages = new List<byte[]>();
         
         private const int DefaultReconnectRetries = 3;
+        #endregion
         
         public void createConnection(string host, string vpnName, string userName, string passWord)
         {
@@ -116,8 +118,28 @@ namespace MessagingClient
         {
             ContextFactory.Instance.Cleanup();
         }
+        
+        public byte[][] Consume()
+        {
+            try
+            {
+                consumeMessage();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Wrapper Logs: Exception thrown: {0}", ex.Message);
+            }
 
+            byte[][] messageArray;
+            lock (messagesLock)  
+            {  
+                messageArray = BinaryMessages.ToArray();
+                BinaryMessages.Clear();
+            }  
+            return messageArray;
+        }
 
+        #region Handle Message
         /// <summary>
         /// This event handler is invoked by Solace Systems Messaging API when a message arrives
         /// </summary>
@@ -146,8 +168,10 @@ namespace MessagingClient
                 WaitEventWaitHandle.Set();
             }
         }
+        #endregion
 
-        public void HandleFlowEvent(object sender, FlowEventArgs args)
+        #region Handle Flow Event
+        private void HandleFlowEvent(object sender, FlowEventArgs args)
         {
             // Received a flow event
             Console.WriteLine("Wrapper Logs: Received Flow Event '{0}' Type: '{1}' Text: '{2}'",
@@ -155,6 +179,7 @@ namespace MessagingClient
                 args.ResponseCode.ToString(),
                 args.Info);
         }
+        #endregion
 
         #region IDisposable Support
         private bool disposedValue = false;
@@ -191,31 +216,11 @@ namespace MessagingClient
         }
         #endregion
 
-        #region Main
+        #region Consume Message
         private void consumeMessage()
         {
             Console.WriteLine("Wrapper Logs: Waiting...");
             WaitEventWaitHandle.WaitOne();
-        }
-        
-        public byte[][] Consume()
-        {
-            try
-            {
-                consumeMessage();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Wrapper Logs: Exception thrown: {0}", ex.Message);
-            }
-
-            byte[][] messageArray;
-            lock (messagesLock)  
-            {  
-                messageArray = BinaryMessages.ToArray();
-                BinaryMessages.Clear();
-            }  
-            return messageArray;
         }
         #endregion
     }
